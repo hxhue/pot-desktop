@@ -258,6 +258,7 @@ pub fn selection_translate() {
     // Get Selected Text
     let text = get_text();
     debug!("selection get_text cost: {:?}", start.elapsed());
+
     if !text.trim().is_empty() {
         let app_handle = APP.get().unwrap();
         if !text.trim().is_empty() {
