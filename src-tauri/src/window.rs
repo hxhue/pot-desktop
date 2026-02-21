@@ -1,11 +1,14 @@
+#[cfg(target_os = "macos")]
 use std::fs;
 
 use crate::config::get;
 use crate::config::set;
 use crate::StringWrapper;
 use crate::APP;
+#[cfg(target_os = "macos")]
 use dirs::cache_dir;
-use log::{info, warn};
+use log::{debug, info, warn};
+use std::time::Instant;
 use tauri::Manager;
 use tauri::Monitor;
 use tauri::Window;
@@ -75,7 +78,8 @@ fn build_window(label: &str, title: &str) -> (Window, bool) {
     match app_handle.get_window(label) {
         Some(v) => {
             info!("Window existence: {}", label);
-            v.set_focus().unwrap();
+            let _ = v.show();
+            v.set_focus().unwrap_or_default();
             (v, true)
         }
         None => {
@@ -133,6 +137,7 @@ fn translate_window() -> Window {
         }
     };
     let (window, exists) = build_window("translate", "Translate");
+
     if exists {
         return window;
     }
@@ -225,17 +230,30 @@ fn translate_window() -> Window {
 
 pub fn selection_translate() {
     use selection::get_text;
-    // Get Selected Text
-    let text = get_text();
-    if !text.trim().is_empty() {
-        let app_handle = APP.get().unwrap();
-        // Write into State
-        let state: tauri::State<StringWrapper> = app_handle.state();
-        state.0.lock().unwrap().replace_range(.., &text);
-    }
 
-    let window = translate_window();
-    window.emit("new_text", text).unwrap();
+    let window_start = Instant::now();
+    let _window = translate_window();
+    debug!("selection translate_window cost: {:?}", window_start.elapsed());
+
+    std::thread::spawn(|| {
+        let start = Instant::now();
+        // Get Selected Text
+        let text = get_text();
+        debug!("selection get_text cost: {:?}", start.elapsed());
+
+        let app_handle = APP.get().unwrap();
+        if !text.trim().is_empty() {
+            // Write into State
+            let state: tauri::State<StringWrapper> = app_handle.state();
+            state.0.lock().unwrap().replace_range(.., &text);
+        }
+
+        let emit_start = Instant::now();
+        if let Some(window) = app_handle.get_window("translate") {
+            window.emit("new_text", text).unwrap_or_default();
+            debug!("selection emit new_text cost: {:?}", emit_start.elapsed());
+        }
+    });
 }
 
 pub fn input_translate() {
@@ -264,8 +282,13 @@ pub fn text_translate(text: String) {
     // Clear State
     let state: tauri::State<StringWrapper> = app_handle.state();
     state.0.lock().unwrap().replace_range(.., &text);
+    let window_start = Instant::now();
     let window = translate_window();
+    debug!("text translate_window cost: {:?}", window_start.elapsed());
+
+    let emit_start = Instant::now();
     window.emit("new_text", text).unwrap();
+    debug!("text emit new_text cost: {:?}", emit_start.elapsed());
 }
 
 pub fn image_translate() {
