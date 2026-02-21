@@ -60,11 +60,16 @@ jobs:
                   rustup target add x86_64-pc-windows-msvc
                   rustup toolchain install --force-non-host stable-x86_64-pc-windows-msvc
 
-            - uses: Swatinem/rust-cache@v2
+            - name: Cache Rust artifacts
+              uses: actions/cache@v4
               with:
-                  workspaces: |
-                      src-tauri -> target
-                  shared-key: windows-x86_64-msvc
+                  path: |
+                      ~\.cargo\registry
+                      ~\.cargo\git
+                      src-tauri\target
+                  key: ${{ runner.os }}-cargo-${{ hashFiles('src-tauri/Cargo.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-cargo-
 
             - name: Setup pnpm
               uses: pnpm/action-setup@v4
@@ -73,11 +78,6 @@ jobs:
 
             - name: Install Dependencies
               run: pnpm install
-
-            - name: Build Rust
-              run: |
-                  cd src-tauri
-                  cargo build
 
             - name: Build and Package (NSIS only, updater disabled)
               run: |
