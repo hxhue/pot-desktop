@@ -155,9 +155,16 @@ fn main() {
         .on_system_tray_event(tray_event_handler)
         .on_window_event(|event| {
             if event.window().label() == "translate" {
-                if let tauri::WindowEvent::CloseRequested { api, .. } = event.event() {
-                    api.prevent_close();
-                    let _ = event.window().hide();
+                match event.event() {
+                    tauri::WindowEvent::CloseRequested { api, .. } => {
+                        info!("Translate window close requested; hide instead of destroy");
+                        api.prevent_close();
+                        let _ = event.window().hide();
+                    }
+                    tauri::WindowEvent::Destroyed => {
+                        info!("Translate window destroyed");
+                    }
+                    _ => {}
                 }
             }
         })
