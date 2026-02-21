@@ -101,7 +101,10 @@ fn main() {
             }
             match get("proxy_enable") {
                 Some(v) => {
-                    if v.as_bool().unwrap() && get("proxy_host").map_or(false, |host| !host.as_str().unwrap().is_empty()) {
+                    if v.as_bool().unwrap()
+                        && get("proxy_host")
+                            .map_or(false, |host| !host.as_str().unwrap().is_empty())
+                    {
                         let _ = set_proxy();
                     }
                 }
@@ -150,6 +153,14 @@ fn main() {
             aliyun
         ])
         .on_system_tray_event(tray_event_handler)
+        .on_window_event(|event| {
+            if event.window().label() == "translate" {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = event.event() {
+                    api.prevent_close();
+                    let _ = event.window().hide();
+                }
+            }
+        })
         .build(tauri::generate_context!())
         .expect("error while running tauri application")
         // 窗口关闭不退出
