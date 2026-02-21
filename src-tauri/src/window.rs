@@ -16,7 +16,8 @@ use tauri::WindowBuilder;
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 use window_shadows::set_shadow;
 
-fn set_skip_animation(window: &Window) {
+
+fn set_skip_animation(_window: &Window) {
     #[cfg(target_os = "windows")]
     {
         use windows::Win32::{
@@ -24,7 +25,7 @@ fn set_skip_animation(window: &Window) {
             Graphics::Dwm::{DwmSetWindowAttribute, DWMWA_TRANSITIONS_FORCEDISABLED},
         };
 
-        if let Ok(hwnd) = window.hwnd() {
+        if let Ok(hwnd) = _window.hwnd() {
             unsafe {
                 let _ = DwmSetWindowAttribute(
                     HWND(hwnd.0 as *mut std::ffi::c_void),
@@ -158,6 +159,7 @@ fn translate_window() -> Window {
         }
     };
     let (window, exists) = build_window("translate", "Translate");
+    set_skip_animation(&window);
 
     if exists {
         return window;
@@ -252,16 +254,11 @@ fn translate_window() -> Window {
 pub fn selection_translate() {
     use selection::get_text;
 
-    let window_start = Instant::now();
-    let _window = translate_window();
-    debug!("selection translate_window cost: {:?}", window_start.elapsed());
-
-    std::thread::spawn(|| {
-        let start = Instant::now();
-        // Get Selected Text
-        let text = get_text();
-        debug!("selection get_text cost: {:?}", start.elapsed());
-
+    let start = Instant::now();
+    // Get Selected Text
+    let text = get_text();
+    debug!("selection get_text cost: {:?}", start.elapsed());
+    if !text.trim().is_empty() {
         let app_handle = APP.get().unwrap();
         if !text.trim().is_empty() {
             // Write into State
@@ -269,12 +266,13 @@ pub fn selection_translate() {
             state.0.lock().unwrap().replace_range(.., &text);
         }
 
-        let emit_start = Instant::now();
-        if let Some(window) = app_handle.get_window("translate") {
-            window.emit("new_text", text).unwrap_or_default();
-            debug!("selection emit new_text cost: {:?}", emit_start.elapsed());
-        }
-    });
+    let window_start = Instant::now();
+    let window = translate_window();
+    debug!("selection translate_window cost: {:?}", window_start.elapsed());
+
+    let emit_start = Instant::now();
+    window.emit("new_text", text).unwrap();
+    debug!("selection emit new_text cost: {:?}", emit_start.elapsed());
 }
 
 pub fn input_translate() {
