@@ -1,9 +1,11 @@
+#[cfg(target_os = "macos")]
 use std::fs;
 
 use crate::config::get;
 use crate::config::set;
 use crate::StringWrapper;
 use crate::APP;
+#[cfg(target_os = "macos")]
 use dirs::cache_dir;
 use log::{info, warn};
 use tauri::Manager;
@@ -24,7 +26,7 @@ fn set_skip_animation(window: &Window) {
         if let Ok(hwnd) = window.hwnd() {
             unsafe {
                 let _ = DwmSetWindowAttribute(
-                    HWND(hwnd.0),
+                    HWND(hwnd.0 as *mut std::ffi::c_void),
                     DWMWA_TRANSITIONS_FORCEDISABLED,
                     &mut BOOL::from(true) as *mut _ as *mut std::ffi::c_void,
                     std::mem::size_of::<BOOL>() as u32,
