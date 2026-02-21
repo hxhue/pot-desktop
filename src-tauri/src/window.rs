@@ -101,7 +101,9 @@ fn build_window(label: &str, title: &str) -> (Window, bool) {
         Some(v) => {
             info!("Window existence: {}", label);
             let _ = v.show();
-            v.set_focus().unwrap_or_default();
+            if label != "translate" {
+                v.set_focus().unwrap_or_default();
+            }
             (v, true)
         }
         None => {
@@ -113,7 +115,7 @@ fn build_window(label: &str, title: &str) -> (Window, bool) {
             )
             .position(position.x.into(), position.y.into())
             .additional_browser_args("--disable-web-security")
-            .focused(true)
+            .focused(label != "translate")
             .title(title)
             .visible(false);
 
@@ -254,6 +256,10 @@ fn translate_window() -> Window {
 pub fn selection_translate() {
     use selection::get_text;
 
+    let window_start = Instant::now();
+    let window = translate_window();
+    debug!("selection translate_window cost: {:?}", window_start.elapsed());
+
     let start = Instant::now();
     let text = get_text();
     debug!("selection get_text cost: {:?}", start.elapsed());
@@ -265,10 +271,6 @@ pub fn selection_translate() {
         let state: tauri::State<StringWrapper> = app_handle.state();
         state.0.lock().unwrap().replace_range(.., &text);
     }
-
-    let window_start = Instant::now();
-    let window = translate_window();
-    debug!("selection translate_window cost: {:?}", window_start.elapsed());
 
     let emit_start = Instant::now();
     window.emit("new_text", text).unwrap();
@@ -292,6 +294,8 @@ pub fn input_translate() {
     if position_type == "mouse" {
         window.center().unwrap();
     }
+
+    window.set_focus().unwrap_or_default();
 
     window.emit("new_text", "[INPUT_TRANSLATE]").unwrap();
 }
