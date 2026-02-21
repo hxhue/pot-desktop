@@ -255,17 +255,16 @@ pub fn selection_translate() {
     use selection::get_text;
 
     let start = Instant::now();
-    // Get Selected Text
     let text = get_text();
     debug!("selection get_text cost: {:?}", start.elapsed());
 
-    if !text.trim().is_empty() {
-        let app_handle = APP.get().unwrap();
-        if !text.trim().is_empty() {
-            // Write into State
-            let state: tauri::State<StringWrapper> = app_handle.state();
-            state.0.lock().unwrap().replace_range(.., &text);
-        }
+    let app_handle = APP.get().unwrap();
+    if text.trim().is_empty() {
+        debug!("selection text is empty");
+    } else {
+        let state: tauri::State<StringWrapper> = app_handle.state();
+        state.0.lock().unwrap().replace_range(.., &text);
+    }
 
     let window_start = Instant::now();
     let window = translate_window();

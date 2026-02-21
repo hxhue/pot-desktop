@@ -61,6 +61,10 @@ jobs:
                   rustup toolchain install --force-non-host stable-x86_64-pc-windows-msvc
 
             - uses: Swatinem/rust-cache@v2
+              with:
+                  workspaces: |
+                      src-tauri -> target
+                  shared-key: windows-x86_64-msvc
 
             - name: Setup pnpm
               uses: pnpm/action-setup@v4
