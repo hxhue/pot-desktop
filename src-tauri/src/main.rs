@@ -150,6 +150,21 @@ fn main() {
             aliyun
         ])
         .on_system_tray_event(tray_event_handler)
+        .on_window_event(|event| {
+            if event.window().label() == "translate" {
+                match event.event() {
+                    tauri::WindowEvent::CloseRequested { api, .. } => {
+                        info!("Translate window close requested; hide instead of destroy");
+                        api.prevent_close();
+                        let _ = event.window().hide();
+                    }
+                    tauri::WindowEvent::Destroyed => {
+                        info!("Translate window destroyed");
+                    }
+                    _ => {}
+                }
+            }
+        })
         .build(tauri::generate_context!())
         .expect("error while running tauri application")
         // 窗口关闭不退出
