@@ -70,10 +70,10 @@ jobs:
             - name: Install Dependencies
               run: pnpm install
 
-            - name: Build Rust
+            - name: Build Rust (locked)
               run: |
                   cd src-tauri
-                  cargo build
+                  cargo build --locked
 
             - name: Build and Package (NSIS only, updater disabled)
               run: |
