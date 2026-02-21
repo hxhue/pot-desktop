@@ -16,6 +16,27 @@ use tauri::WindowBuilder;
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 use window_shadows::set_shadow;
 
+fn set_skip_animation(window: &Window) {
+    #[cfg(target_os = "windows")]
+    {
+        use windows::Win32::{
+            Foundation::{BOOL, HWND},
+            Graphics::Dwm::{DwmSetWindowAttribute, DWMWA_TRANSITIONS_FORCEDISABLED},
+        };
+
+        if let Ok(hwnd) = window.hwnd() {
+            unsafe {
+                let _ = DwmSetWindowAttribute(
+                    HWND(hwnd.0 as *mut std::ffi::c_void),
+                    DWMWA_TRANSITIONS_FORCEDISABLED,
+                    &mut BOOL::from(true) as *mut _ as *mut std::ffi::c_void,
+                    std::mem::size_of::<BOOL>() as u32,
+                );
+            }
+        }
+    }
+}
+
 // Get daemon window instance
 fn get_daemon_window() -> Window {
     let app_handle = APP.get().unwrap();
